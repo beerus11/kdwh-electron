@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: ipcRenderer,
   handleCounter: (callback) => ipcRenderer.on('update-counter', callback),
+  validationComplete: (callback) => ipcRenderer.on('validation-complete', callback),
+  onSave: (callback) => ipcRenderer.on('on-save', callback),
 });
 
 window.addEventListener('DOMContentLoaded', () => {

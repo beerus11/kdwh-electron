@@ -42,19 +42,25 @@ function openCSVFile() {
 
 function validateCSV(filePath) {
   const readStream = fs.createReadStream(filePath, { encoding: 'utf8' });
+  const errorStream = fs.createWriteStream('error_report.csv');
+  errorStream.write('Line,Error Message\n');
   const lineReader = readline.createInterface({
     input: readStream,
     output: process.stdout,
     terminal: false
   });
 
-  let currentChunk = '';
   let lineCount = 1;
 
   lineReader.on('line', (line) => {
     //currentChunk += line + '\n';
-    console.log(line,"\n\n");
-    console.log(mainWindow.webContents.send);
+
+    if (!validateRow(line)){
+      const errorLine = `Line ${lineCount + 1},"${line}"\n`;
+      errorStream.write(errorLine);
+    }
+    
+
     mainWindow.webContents.send('update-counter',lineCount);
     lineCount++;
     // if (currentChunk.length >= 1024 * 1024) { // Process each megabyte of data
@@ -64,6 +70,8 @@ function validateCSV(filePath) {
   });
 
   lineReader.on('close', () => {
+    errorStream.end();
+    mainWindow.webContents.send('validation-complete', 'error_report.csv');
     // Process the remaining data in the last chunk
     // if (currentChunk) {
     //   processChunk(currentChunk);
@@ -118,4 +126,28 @@ app.on('activate', () => {
 ipcMain.on('open-csv-file', () => {
   console.log("csv")
   openCSVFile();
+});
+
+ipcMain.on('save-dialog', (event, defaultPath) => {
+  dialog.showSaveDialog(mainWindow, {
+    defaultPath,
+    buttonLabel: 'Save Error Report',
+  }).then((result) => {
+    if (!result.canceled) {
+      const fs = require('fs');
+      fs.rename(defaultPath, result.filePath, (err) => {
+        if (err) {
+          console.error('Error moving the file:', err);
+        } else {
+          console.log('File saved in:', result.filePath);
+        }
+      });
+    }
+  });
+});
+
+
+ipcMain.on('download', (event,{payload}) => {
+  //console.log(payload);
+  mainWindow.webContents.downloadURL(payload.fileUrl);
 });
