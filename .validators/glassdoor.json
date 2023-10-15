@@ -1,0 +1,201 @@
+{
+    "record_id_cols": ["org_number","review_date","review_title","review_raw","review_title_language"],
+    "columns":  [
+    {
+      "name": "review_id",
+      "type": "float"
+    },
+    {
+      "name": "career_opportunities",
+      "type": "float"
+    },
+    {
+      "name": "ceo_approval",
+      "type": "string"
+    },
+    {
+      "name": "cons",
+      "type": "string"
+    },
+    {
+      "name": "cons_language",
+      "type": "string"
+    },
+    {
+      "name": "cons_raw",
+      "type": "string"
+    },
+    {
+      "name": "created_at",
+      "type": "string"
+    },
+    {
+      "name": "culture",
+      "type": "float"
+    },
+    {
+      "name": "designation",
+      "type": "string"
+    },
+    {
+      "name": "designation_language",
+      "type": "string"
+    },
+    {
+      "name": "designation_raw",
+      "type": "string"
+    },
+    {
+      "name": "diversity",
+      "type": "string"
+    },
+    {
+      "name": "esg_awareness",
+      "type": "string"
+    },
+    {
+      "name": "job_security_advancement",
+      "type": "float"
+    },
+    {
+      "name": "location",
+      "type": "string"
+    },
+    {
+      "name": "location_language",
+      "type": "string"
+    },
+    {
+      "name": "location_raw",
+      "type": "string"
+    },
+    {
+      "name": "management_advice",
+      "type": "string"
+    },
+    {
+      "name": "management_advice_language",
+      "type": "string"
+    },
+    {
+      "name": "management_advice_raw",
+      "type": "string"
+    },
+    {
+      "name": "org_number",
+      "type": "string"
+    },
+    {
+      "name": "positive_business_outlook",
+      "type": "string"
+    },
+    {
+      "name": "pros",
+      "type": "string"
+    },
+    {
+      "name": "pros_language",
+      "type": "string"
+    },
+    {
+      "name": "pros_raw",
+      "type": "string"
+    },
+    {
+      "name": "rating",
+      "type": "float"
+    },
+    {
+      "name": "rating_atmosphere",
+      "type": "string"
+    },
+    {
+      "name": "rating_equality",
+      "type": "string"
+    },
+    {
+      "name": "rating_image",
+      "type": "string"
+    },
+    {
+      "name": "rating_old_colleagues",
+      "type": "string"
+    },
+    {
+      "name": "rating_teamwork",
+      "type": "string"
+    },
+    {
+      "name": "rating_work_conditions",
+      "type": "string"
+    },
+    {
+      "name": "recommendation_to_a_friend",
+      "type": "string"
+    },
+    {
+      "name": "review",
+      "type": "string"
+    },
+    {
+      "name": "review_date",
+      "type": "string"
+    },
+    {
+      "name": "review_language",
+      "type": "string"
+    },
+    {
+      "name": "review_raw",
+      "type": "string"
+    },
+    {
+      "name": "review_title",
+      "type": "string"
+    },
+    {
+      "name": "review_title_language",
+      "type": "string"
+    },
+    {
+      "name": "review_title_raw",
+      "type": "string"
+    },
+    {
+      "name": "review_type",
+      "type": "string"
+    },
+    {
+      "name": "salary_benefits",
+      "type": "float"
+    },
+    {
+      "name": "senior_management",
+      "type": "string"
+    },
+    {
+      "name": "skill_development",
+      "type": "float"
+    },
+    {
+      "name": "source_id",
+      "type": "float"
+    },
+    {
+      "name": "updated_at",
+      "type": "string"
+    },
+    {
+      "name": "url",
+      "type": "string"
+    },
+    {
+      "name": "work_life_balance",
+      "type": "float"
+    },
+    {
+      "name": "work_satisfaction",
+      "type": "float"
+    }
+  ]
+  }

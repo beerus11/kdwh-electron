@@ -1,0 +1,21 @@
+{
+    "record_id_cols": ["review_id","org_number","review_date","raw_review","language","updated_at"],
+    "columns": [
+      {"name": "review_id", "type": "string"},
+      {"name": "org_number", "type": "string"},
+      {"name": "url", "type": "string"},
+      {"name": "app_id", "type": "string"},
+      {"name": "user_id", "type": "string"},
+      {"name": "title", "type": "string"},
+      {"name": "raw_review", "type": "string"},
+      {"name": "review", "type": "string"},
+      {"name": "language", "type": "string"},
+      {"name": "review_date", "type": "string"},
+      {"name": "rating", "type": "float"},
+      {"name": "pros", "type": "string"},
+      {"name": "cons", "type": "string"},
+      {"name": "source_id", "type": "string"},
+      {"name": "created_at", "type": "string"},
+      {"name": "updated_at", "type": "string"}
+    ]
+  }
