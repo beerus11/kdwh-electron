@@ -71,7 +71,8 @@
     const ipcRenderer = window.electron.ipcRenderer;
   
     function openCSVFile() {
-      ipcRenderer.send('open-csv-file');
+        const dataSource = document.getElementById("data-source");
+        ipcRenderer.send('open-csv-file',{dataSource: dataSource.value});
     }
 
     window.electron.handleCounter((event, value) => {

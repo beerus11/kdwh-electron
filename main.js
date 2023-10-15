@@ -1,13 +1,16 @@
 const { app, BrowserWindow, dialog,ipcMain } = require('electron');
+const { INVALID_CSV_FILE, HEADERS_EXTRA_COLUMN_FOUND, HEADERS_COLUMN_MISSING, CELL_INCORRECT_DATA_TYPE } = require('./errors');
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
 const readline = require('readline');
 const axios = require('axios');
+const {GlassDoorValidator} = require('./validator')
 
 let mainWindow;
 
 app.on('ready', createWindow);
+
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -21,7 +24,7 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
-  //mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -29,52 +32,60 @@ function createWindow() {
   
 }
 
-function openCSVFile() {
+function openCSVFile(dataSource) {
   dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [{ name: 'CSV Files', extensions: ['csv'] }],
   }).then((result) => {
     if (!result.canceled) {
       const filePath = result.filePaths[0];
-      validateCSV(filePath);
+      validateCSV(filePath,dataSource);
     }
   });
 }
 
-function validateCSV(filePath) {
+function validateCSV(filePath,dataSource) {
   const readStream = fs.createReadStream(filePath, { encoding: 'utf8' });
   const errorStream = fs.createWriteStream('error_report.csv');
-  errorStream.write('Line,Error Message\n');
+  errorStream.write('Error Message\n');
   const lineReader = readline.createInterface({
     input: readStream,
     output: process.stdout,
     terminal: false
   });
 
+  const validator = new GlassDoorValidator(dataSource);
+
   let lineCount = 1;
   let errCount = 0;
+  let headerRow = [];
 
   lineReader.on('line', (line) => {
     //currentChunk += line + '\n';
+    if(lineCount==1){
+      headerRow = parseCSVLine(line,"|");
+     console.log(validator.validateHeaders(headerRow));
 
-    if (!validateRow(line)){
-      const errorLine = `Line ${lineCount + 1},"${line}"\n`;
-      errorStream.write(errorLine);
-      errCount+=1
+    }
+
+    if (lineCount>1){
+      const row = parseCSVLine(line,"|");
+      const error = validator.validateRow(headerRow,row,lineCount);
+      if(error.length>0){
+        const errorLine = `"${error.join(",")}"\n`;
+        errorStream.write(errorLine);
+        errCount+=1
+      }
     }
     
 
     mainWindow.webContents.send('update-counter',lineCount);
     lineCount++;
-    // if (currentChunk.length >= 1024 * 1024) { // Process each megabyte of data
-    //   processChunk(currentChunk);
-    //   currentChunk = '';
-    // }
   });
 
   lineReader.on('close', () => {
     errorStream.end();
-    mainWindow.webContents.send('validation-complete', {isValid : errCount>0,errfileName:'error_report.csv',rawFile:filePath});
+    mainWindow.webContents.send('validation-complete', {isValid : errCount==0,errfileName:'error_report.csv',rawFile:filePath});
     // Process the remaining data in the last chunk
     // if (currentChunk) {
     //   processChunk(currentChunk);
@@ -98,11 +109,15 @@ function validateCSV(filePath) {
     }
   }
 
-  function validateRow(line) {
+  function validateRow(line,dataSource,row,isHeader) {
     // Implement your validation logic for a single row here
     // Return true if the row is valid, false if it's invalid
 
     // Example validation: Check if a specific field is present in the row
+    if(isHeader){
+      console.log(validator.validateHeaders());
+    }
+    
     return line.includes('yourFieldName');
   }
 }
@@ -126,9 +141,8 @@ app.on('activate', () => {
 
 
 // Event listener to handle communication from the renderer process
-ipcMain.on('open-csv-file', () => {
-  console.log("csv")
-  openCSVFile();
+ipcMain.on('open-csv-file', (event,dataSource) => {
+  openCSVFile(dataSource.dataSource);
 });
 
 ipcMain.on('save-dialog', (event, defaultPath) => {
@@ -183,3 +197,31 @@ ipcMain.on('upload-csv',(event,{payload}) =>{
       console.error('Error uploading file to S3', error);
     });
 });
+
+function parseCSVLine(line, delimiter) {
+  const values = [];
+  let currentValue = '';
+  let insideQuotedValue = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === delimiter && !insideQuotedValue) {
+      values.push(currentValue);
+      currentValue = '';
+    } else if (char === '"') {
+      if (insideQuotedValue) {
+        insideQuotedValue = false;
+      } else {
+        insideQuotedValue = true;
+      }
+    } else {
+      currentValue += char;
+    }
+  }
+
+  values.push(currentValue);
+
+  return values;
+}
+
