@@ -4,7 +4,8 @@ contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: ipcRenderer,
   handleCounter: (callback) => ipcRenderer.on('update-counter', callback),
   validationComplete: (callback) => ipcRenderer.on('validation-complete', callback),
-  onSave: (callback) => ipcRenderer.on('on-save', callback),
+  onSave: (callback) => ipcRenderer.on('validation-complete', callback),
+  uploadComplete: (callback) => ipcRenderer.on('upload-complete', callback),
 });
 
 window.addEventListener('DOMContentLoaded', () => {

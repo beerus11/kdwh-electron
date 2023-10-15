@@ -16,10 +16,6 @@
         <!-- Job Submission Form -->
         <form id="jobForm" enctype="multipart/form-data">
             <div class="row">
-                <div class="col-md-3 mb-1">
-                    <button class="btn btn-primary" onclick="openCSVFile()" id="uploadButton"> <i class="fas fa-upload"></i> Upload & validate CSV</button>
-                </div>
-                <div class="col-md-3 mb-1" id="validationResults"><p>0 Lines Validated</p></div>
                 <div class="col-md-3 mb-3">
                     <select class="form-select" id="data-source">
                         <option value="glassdoor_reviews">Glassdoor Reviews</option>
@@ -34,9 +30,10 @@
                         <option value="digital_presence">Digital Presence</option>
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <button type="submit" class="btn btn-primary">Upload</button>
+                <div class="col-md-3 mb-1">
+                    <button class="btn btn-primary" onclick="openCSVFile()" id="uploadButton"> <i class="fas fa-upload"></i> Validate & Upload CSV</button>
                 </div>
+                <div class="col-md-3 mb-1" id="validationResults"><p style="font-size: 18px;display: inline-block; margin: 0 auto;">0 Lines Validated</p></div>
             </div>
         </form>
     
@@ -76,13 +73,198 @@
     function openCSVFile() {
       ipcRenderer.send('open-csv-file');
     }
-    console.log(ipcRenderer);
-    console.log(window.electron);
+
     window.electron.handleCounter((event, value) => {
         document.getElementById('validationResults').innerHTML = value+" Lines Validated";
     })
 
+    window.electron.validationComplete((event,payload) => {
+        console.log(payload);
+        if(!payload.isValid){
+            document.getElementById('validationResults').innerHTML = "Validation Failed!";
+            ipcRenderer.send('save-dialog', payload.errfileName);
+        }else{
+            console.log("uploading file");
+            uploadCSVFile(payload.rawFile);
+        } 
+    });
+
+
+    window.electron.uploadComplete((event,response) => {
+        console.log(response);
+        uploadStatus(response['uploadId'],response['path'])
+    });
+
   </script>
+  <script>
+    const host = 'http://13.126.252.123';
+    const downloadButton = `<button class="btn btn-primary download-btn border-0" style="background-color: transparent;"><i class="fas fa-download text-dark"></i></button>`;
+    const updownloadButton = `<button class="btn btn-primary download-btn-up border-0" style="background-color: transparent;"><i class="fas fa-download text-dark"></i></button>`;
+    const errdownloadButton = `<button class="btn btn-primary download-btn-err border-0" style="background-color: transparent;"><i class="fas fa-download text-danger"></i></button>`;
+
+    function addRowToDataTable(data) {
+        $('#jobStatusTable').DataTable().row.add([
+            data.ID,
+            data.FileName,
+            data.DataSource,
+            data.Status,
+            data.Records,
+            downloadButton,
+            updownloadButton,
+            errdownloadButton,
+            data.CreatedAt,
+        ]).draw(false);
+    }
+
+    $(document).on('click', '.download-btn', function() {
+        // Get the ID from the data attribute of the clicked button
+        const table = $('#jobStatusTable').DataTable();
+        const rowData = table.row($(this).closest('tr')).data();
+
+        if (rowData) {
+            // Extract the necessary information from the row data
+            const fileId = rowData[0]; // Assuming ID is in the first column
+
+            // Make an API call to download the file using the fileId or other relevant data
+            // Replace 'YOUR_DOWNLOAD_API_ENDPOINT_HERE' with the actual download API endpoint
+            const downloadUrl = host+'/api/download-file?type=raw' + `&id=${fileId}`;
+
+            // Trigger the file download
+            //window.open(downloadUrl, '_blank');
+            ipcRenderer.send('download', {payload:{fileUrl:downloadUrl}});
+        } else {
+            // Handle the case where rowData is not found (e.g., an issue with DataTables)
+            console.error("Row data not found.");
+        }
+    });
+    $(document).on('click', '.download-btn-up', function() {
+        // Get the ID from the data attribute of the clicked button
+        const table = $('#jobStatusTable').DataTable();
+        const rowData = table.row($(this).closest('tr')).data();
+
+        if (rowData) {
+            // Extract the necessary information from the row data
+            const fileId = rowData[0]; // Assuming ID is in the first column
+
+            // Make an API call to download the file using the fileId or other relevant data
+            // Replace 'YOUR_DOWNLOAD_API_ENDPOINT_HERE' with the actual download API endpoint
+            const downloadUrl = host+'/api/download-file?type=up' + `&id=${fileId}`;
+
+            // Trigger the file download
+            //window.open(downloadUrl, '_blank');
+            ipcRenderer.send('download', {payload:{fileUrl:downloadUrl}});
+        } else {
+            // Handle the case where rowData is not found (e.g., an issue with DataTables)
+            console.error("Row data not found.");
+        }
+    });
+
+    $(document).on('click', '.download-btn-err', function() {
+        // Get the ID from the data attribute of the clicked button
+        const table = $('#jobStatusTable').DataTable();
+        const rowData = table.row($(this).closest('tr')).data();
+
+        if (rowData) {
+            // Extract the necessary information from the row data
+            const fileId = rowData[0]; // Assuming ID is in the first column
+
+            // Make an API call to download the file using the fileId or other relevant data
+            // Replace 'YOUR_DOWNLOAD_API_ENDPOINT_HERE' with the actual download API endpoint
+            const downloadUrl = host+'/api/download-file?type=error' + `&id=${fileId}`;
+
+            // Trigger the file download
+            //window.open(downloadUrl, '_blank');
+            ipcRenderer.send('download', {payload:{fileUrl:downloadUrl}});
+        } else {
+            // Handle the case where rowData is not found (e.g., an issue with DataTables)
+            console.error("Row data not found.");
+        }
+    });
+
+
+    function fetchDataAndPopulateTable() {
+        fetch(host+"/api/upload")
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(item => {
+                    addRowToDataTable(item);
+                });
+            })
+            .catch(error => {
+                // Handle network or other errors
+                console.error("An error occurred: " + error.message);
+            });
+    }
+
+    function uploadStatus(uploadId,path){
+        fetch(host+"/api/"+uploadId+"/uploaded", {
+            method: "POST",
+            body: JSON.stringify({"uploadId":uploadId,"path":path}),
+        }).then(function (response) {
+            return response.json();
+        })
+            .then(response => {
+                //location.reload();
+            })
+            .catch(error => {
+                // Handle network or other errors
+                alert("An error occurred: " + error.message);
+            });
+    }
+
+
+
+    $(document).ready(function() {
+        $('#jobStatusTable').DataTable();
+        fetchDataAndPopulateTable();
+    });
+
+    document.getElementById("jobForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        const fileInput = document.getElementById("file");
+        const formData = new FormData();
+        const dataSource = document.getElementById("data-source");
+        formData.append("data-source",dataSource.value);
+
+        if (fileInput.files.length > 0) {
+            fetch(host+"/api/get-signed-url", {
+                method: "POST",
+                body: formData,
+            }).then(function (response) {
+                    return response.json();
+                })
+                .then(response => {
+                    uploadFile(response,fileInput.files[0],dataSource.value,fileInput.files[0].type);
+                })
+                .catch(error => {
+                    // Handle network or other errors
+                    alert("An error occurred: " + error.message);
+                });
+        } else {
+            alert("Please select a file to upload.");
+        }
+    });
+
+    function uploadCSVFile(filepath){
+        const formData = new FormData();
+        const dataSource = document.getElementById("data-source");
+        formData.append("data-source",dataSource.value);
+
+        fetch(host+"/api/get-signed-url", {
+                method: "POST",
+                body: formData,
+            }).then(function (response) {
+                    return response.json();
+                })
+                .then(response => {
+                    ipcRenderer.send('upload-csv', {payload:{filePath:filepath,response:response}});
+                })
+                .catch(error => {
+                    // Handle network or other errors
+                    alert("An error occurred: " + error.message);
+                });
+    }
+</script>
   
 </body>
 </html>

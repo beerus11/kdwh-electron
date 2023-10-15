@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
 const readline = require('readline');
+const axios = require('axios');
 
 let mainWindow;
 
@@ -51,6 +52,7 @@ function validateCSV(filePath) {
   });
 
   let lineCount = 1;
+  let errCount = 0;
 
   lineReader.on('line', (line) => {
     //currentChunk += line + '\n';
@@ -58,6 +60,7 @@ function validateCSV(filePath) {
     if (!validateRow(line)){
       const errorLine = `Line ${lineCount + 1},"${line}"\n`;
       errorStream.write(errorLine);
+      errCount+=1
     }
     
 
@@ -71,7 +74,7 @@ function validateCSV(filePath) {
 
   lineReader.on('close', () => {
     errorStream.end();
-    mainWindow.webContents.send('validation-complete', 'error_report.csv');
+    mainWindow.webContents.send('validation-complete', {isValid : errCount>0,errfileName:'error_report.csv',rawFile:filePath});
     // Process the remaining data in the last chunk
     // if (currentChunk) {
     //   processChunk(currentChunk);
@@ -150,4 +153,33 @@ ipcMain.on('save-dialog', (event, defaultPath) => {
 ipcMain.on('download', (event,{payload}) => {
   //console.log(payload);
   mainWindow.webContents.downloadURL(payload.fileUrl);
+});
+
+ipcMain.on('upload-csv',(event,{payload}) =>{
+
+  //console.log(payload)
+  // Read the CSV file
+  const file = fs.createReadStream(payload.filePath);
+  const contentLength = fs.statSync(payload.filePath).size;
+
+  axios({
+    method: 'put',
+    url: payload.response.url,
+    data: file,
+    headers: {
+      'Content-Type': 'text/csv',
+      'Content-Length': contentLength,
+    },
+  })
+    .then((response) => {
+      console.log('File successfully uploaded to S3');
+      const event = {
+        uploadId: payload.response.uploadId,
+        path: payload.response.path
+      }
+      mainWindow.webContents.send('upload-complete',event);
+    })
+    .catch((error) => {
+      console.error('Error uploading file to S3', error);
+    });
 });
