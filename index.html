@@ -85,13 +85,14 @@
             ipcRenderer.send('save-dialog', payload.errfileName);
         }else{
             console.log("uploading file");
+            document.getElementById('validationResults').innerHTML = "Uploading File.....";
             uploadCSVFile(payload.rawFile);
         } 
     });
 
 
     window.electron.uploadComplete((event,response) => {
-        console.log(response);
+        document.getElementById('validationResults').innerHTML = "Upload Complete!";
         uploadStatus(response['uploadId'],response['path'])
     });
 
@@ -183,6 +184,8 @@
 
 
     function fetchDataAndPopulateTable() {
+        var table = $('#jobStatusTable').DataTable();
+        table.clear().draw();
         fetch(host+"/api/upload")
             .then(response => response.json())
             .then(data => {
@@ -205,6 +208,7 @@
         })
             .then(response => {
                 //location.reload();
+                fetchDataAndPopulateTable();
             })
             .catch(error => {
                 // Handle network or other errors
@@ -217,32 +221,6 @@
     $(document).ready(function() {
         $('#jobStatusTable').DataTable();
         fetchDataAndPopulateTable();
-    });
-
-    document.getElementById("jobForm").addEventListener("submit", function (e) {
-        e.preventDefault();
-        const fileInput = document.getElementById("file");
-        const formData = new FormData();
-        const dataSource = document.getElementById("data-source");
-        formData.append("data-source",dataSource.value);
-
-        if (fileInput.files.length > 0) {
-            fetch(host+"/api/get-signed-url", {
-                method: "POST",
-                body: formData,
-            }).then(function (response) {
-                    return response.json();
-                })
-                .then(response => {
-                    uploadFile(response,fileInput.files[0],dataSource.value,fileInput.files[0].type);
-                })
-                .catch(error => {
-                    // Handle network or other errors
-                    alert("An error occurred: " + error.message);
-                });
-        } else {
-            alert("Please select a file to upload.");
-        }
     });
 
     function uploadCSVFile(filepath){
